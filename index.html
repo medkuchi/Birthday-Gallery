@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Gallery</title>
+    <!-- jsPDF Library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Home Screen */
+        .home-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+        }
+
+        .home-screen h1 {
+            color: white;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .home-screen p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            margin-left: 10px;
+        }
+
+        /* Gallery Screen */
+        .gallery-screen {
+            display: none;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .share-link {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .share-link input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-small {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Add Memory Form */
+        .add-memory-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .add-memory-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .file-upload {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn {
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .file-upload-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .file-name {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .preview-image {
+            max-width: 200px;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 20px 0;
+        }
+
+        .memory-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transform: rotate(var(--rotation));
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .memory-card:hover {
+            transform: rotate(0deg) scale(1.05);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+            z-index: 10;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 18px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+            z-index: 5;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .memory-card:hover .delete-btn {
+            display: flex;
+        }
+
+        .memory-card:nth-child(3n+1) {
+            --rotation: -2deg;
+        }
+
+        .memory-card:nth-child(3n+2) {
+            --rotation: 1deg;
+        }
+
+        .memory-card:nth-child(3n+3) {
+            --rotation: -1deg;
+        }
+
+        .memory-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background: #f0f0f0;
+        }
+
+        .memory-content {
+            padding: 10px 5px;
+        }
+
+        .memory-message {
+            color: #333;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            min-height: 60px;
+        }
+
+        .memory-author {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: right;
+            font-style: italic;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            padding: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .home-screen h1 {
+                font-size: 2rem;
+            }
+
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Home Screen -->
+        <div class="home-screen" id="homeScreen">
+            <h1>🎉 Memory Gallery</h1>
+            <p>Create a special space to collect birthday memories from friends and family</p>
+            <div>
+                <button class="btn" onclick="createRoom()">Create New Gallery</button>
+                <button class="btn btn-secondary" onclick="showJoinPrompt()">Join Existing Gallery</button>
+            </div>
+        </div>
+
+        <!-- Gallery Screen -->
+        <div class="gallery-screen" id="galleryScreen">
+            <div class="header">
+                <h1>✨ Memory Gallery</h1>
+                <p>Share this link with friends to collect memories!</p>
+                <div class="share-link">
+                    <input type="text" id="shareLinkInput" readonly>
+                    <button class="btn btn-small" onclick="copyLink()">Copy Link</button>
+                    <button class="btn btn-small" id="viewModeBtn" onclick="toggleViewMode()" style="background: #764ba2; color: white;">View Only Mode</button>
+                    <button class="btn btn-small" onclick="downloadPDF()" style="background: #28a745; color: white;">Download PDF</button>
+                </div>
+            </div>
+
+            <div class="add-memory-section">
+                <h2>Add Your Memory</h2>
+                <form id="memoryForm" onsubmit="addMemory(event)">
+                    <div class="form-group">
+                        <label for="authorName">Your Name *</label>
+                        <input type="text" id="authorName" required placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Your Message *</label>
+                        <textarea id="message" required placeholder="Share your favorite memory or birthday wishes..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Add a Photo (Optional)</label>
+                        <div class="file-upload">
+                            <label class="file-upload-btn" for="photoUpload">Choose Photo</label>
+                            <input type="file" id="photoUpload" accept="image/*" onchange="previewImage(event)">
+                            <span class="file-name" id="fileName">No file chosen</span>
+                        </div>
+                        <img id="imagePreview" class="preview-image" style="display: none;">
+                    </div>
+                    <button type="submit" class="btn">Add Memory</button>
+                </form>
+            </div>
+
+            <div id="galleryContainer">
+                <div class="loading">Loading memories...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCp82E23mA5SK--28B41GIcTJaUIjuv5_w",
+            authDomain: "birthday-gallery-1fdc4.firebaseapp.com",
+            projectId: "birthday-gallery-1fdc4",
+            storageBucket: "birthday-gallery-1fdc4.firebasestorage.app",
+            messagingSenderId: "574321670238",
+            appId: "1:574321670238:web:768f9e9550a9f961a59ccf"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Make functions global
+        window.db = db;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.query = query;
+        window.onSnapshot = onSnapshot;
+        window.orderBy = orderBy;
+        window.deleteDoc = deleteDoc;
+        window.doc = doc;
+    </script>
+
+    <script>
+        let currentRoomId = null;
+        let uploadedImageData = null;
+        let unsubscribe = null; // For cleaning up listener
+        let isViewOnlyMode = false; // Track view-only mode
+
+        // Initialize - check if there's a room ID in URL hash
+        window.addEventListener('load', () => {
+            const hash = window.location.hash.slice(1);
+            
+            if (hash) {
+                currentRoomId = hash;
+                showGallery();
+                loadMemories();
+            }
+        });
+
+        function createRoom() {
+            // Generate a unique room ID
+            currentRoomId = generateRoomId();
+            
+            // Update URL hash
+            window.location.hash = currentRoomId;
+            
+            showGallery();
+            loadMemories();
+        }
+
+        function showJoinPrompt() {
+            const roomId = prompt('Enter the room code:');
+            if (roomId) {
+                currentRoomId = roomId;
+                window.location.hash = roomId;
+                showGallery();
+                loadMemories();
+            }
+        }
+
+        function generateRoomId() {
+            return 'room_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function showGallery() {
+            document.getElementById('homeScreen').style.display = 'none';
+            document.getElementById('galleryScreen').style.display = 'block';
+            
+            // Set share link using hash
+            const shareUrl = `${window.location.origin}${window.location.pathname}#${currentRoomId}`;
+            document.getElementById('shareLinkInput').value = shareUrl;
+            
+            // Update view based on mode
+            updateViewMode();
+        }
+
+        function toggleViewMode() {
+            isViewOnlyMode = !isViewOnlyMode;
+            updateViewMode();
+        }
+
+        function updateViewMode() {
+            const addMemorySection = document.querySelector('.add-memory-section');
+            const viewModeBtn = document.getElementById('viewModeBtn');
+            const headerText = document.querySelector('.header p');
+            
+            if (isViewOnlyMode) {
+                // Hide the add memory form
+                addMemorySection.style.display = 'none';
+                viewModeBtn.textContent = 'Exit View Mode';
+                viewModeBtn.style.background = '#667eea';
+                headerText.textContent = 'View-Only Mode: Browse memories without the form';
+            } else {
+                // Show the add memory form
+                addMemorySection.style.display = 'block';
+                viewModeBtn.textContent = 'View Only Mode';
+                viewModeBtn.style.background = '#764ba2';
+                headerText.textContent = 'Share this link with friends to collect memories!';
+            }
+        }
+
+        function copyLink() {
+            const input = document.getElementById('shareLinkInput');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Check file size (max 1MB to stay within Firestore limits)
+                if (file.size > 1024 * 1024) {
+                    alert('Please choose an image smaller than 1MB');
+                    event.target.value = '';
+                    return;
+                }
+
+                document.getElementById('fileName').textContent = file.name;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImageData = e.target.result;
+                    const preview = document.getElementById('imagePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function addMemory(event) {
+            event.preventDefault();
+            
+            const authorName = document.getElementById('authorName').value;
+            const message = document.getElementById('message').value;
+            
+            const memory = {
+                author: authorName,
+                message: message,
+                image: uploadedImageData || null,
+                timestamp: new Date().toISOString(),
+                createdAt: Date.now()
+            };
+            
+            try {
+                // Add to Firestore
+                const memoriesRef = window.collection(window.db, `rooms/${currentRoomId}/memories`);
+                await window.addDoc(memoriesRef, memory);
+                
+                // Reset form
+                document.getElementById('memoryForm').reset();
+                document.getElementById('imagePreview').style.display = 'none';
+                document.getElementById('fileName').textContent = 'No file chosen';
+                uploadedImageData = null;
+                
+                alert('Memory added successfully! 🎉');
+            } catch (error) {
+                console.error('Error adding memory:', error);
+                alert('Failed to add memory. Please try again.');
+            }
+        }
+
+        function loadMemories() {
+            const container = document.getElementById('galleryContainer');
+            
+            // Clean up previous listener if exists
+            if (unsubscribe) {
+                unsubscribe();
+            }
+            
+            // Set up real-time listener
+            const memoriesRef = window.collection(window.db, `rooms/${currentRoomId}/memories`);
+            const q = window.query(memoriesRef, window.orderBy('createdAt', 'desc'));
+            
+            unsubscribe = window.onSnapshot(q, (snapshot) => {
+                const memories = [];
+                snapshot.forEach((doc) => {
+                    memories.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (memories.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No memories yet</h3>
+                            <p>Be the first to add a memory!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <div class="gallery-grid">
+                        ${memories.map(memory => `
+                            <div class="memory-card">
+                                ${!isViewOnlyMode ? `<button class="delete-btn" onclick="deleteMemory('${memory.id}', event)" title="Delete memory">×</button>` : ''}
+                                ${memory.image ? 
+                                    `<img src="${memory.image}" alt="Memory" class="memory-image">` :
+                                    `<div class="memory-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">📷</div>`
+                                }
+                                <div class="memory-content">
+                                    <div class="memory-message">${escapeHtml(memory.message)}</div>
+                                    <div class="memory-author">- ${escapeHtml(memory.author)}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }, (error) => {
+                console.error('Error loading memories:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No memories yet</h3>
+                        <p>Be the first to add a memory!</p>
+                    </div>
+                `;
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function deleteMemory(memoryId, event) {
+            event.stopPropagation(); // Prevent card click
+            
+            if (!confirm('Are you sure you want to delete this memory?')) {
+                return;
+            }
+            
+            try {
+                const memoryRef = window.doc(window.db, `rooms/${currentRoomId}/memories`, memoryId);
+                await window.deleteDoc(memoryRef);
+                // No need to reload - the real-time listener will update automatically
+            } catch (error) {
+                console.error('Error deleting memory:', error);
+                alert('Failed to delete memory. Please try again.');
+            }
+        }
+
+        async function downloadPDF() {
+            try {
+                // Get jsPDF from the global window object
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Get memories from Firestore
+                const memoriesRef = window.collection(window.db, `rooms/${currentRoomId}/memories`);
+                const q = window.query(memoriesRef, window.orderBy('createdAt', 'desc'));
+                
+                // Fetch memories
+                const snapshot = await new Promise((resolve, reject) => {
+                    window.onSnapshot(q, resolve, reject);
+                });
+                
+                const memories = [];
+                snapshot.forEach((doc) => {
+                    memories.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (memories.length === 0) {
+                    alert('No memories to download yet!');
+                    return;
+                }
+                
+                // PDF Title
+                doc.setFontSize(24);
+                doc.setTextColor(102, 126, 234);
+                doc.text('Memory Gallery', 105, 20, { align: 'center' });
+                
+                doc.setFontSize(12);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`${memories.length} memories collected`, 105, 30, { align: 'center' });
+                
+                let yPosition = 45;
+                const pageHeight = doc.internal.pageSize.height;
+                const margin = 20;
+                const maxWidth = 170;
+                
+                // Add each memory
+                for (let i = 0; i < memories.length; i++) {
+                    const memory = memories[i];
+                    
+                    // Check if we need a new page
+                    if (yPosition > pageHeight - 60) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    // Add image if exists
+                    if (memory.image) {
+                        try {
+                            const imgData = memory.image;
+                            const imgWidth = 50;
+                            const imgHeight = 50;
+                            doc.addImage(imgData, 'JPEG', margin, yPosition, imgWidth, imgHeight);
+                            yPosition += imgHeight + 5;
+                        } catch (e) {
+                            console.log('Could not add image:', e);
+                        }
+                    }
+                    
+                    // Add message
+                    doc.setFontSize(11);
+                    doc.setTextColor(50, 50, 50);
+                    const messageLines = doc.splitTextToSize(memory.message, maxWidth);
+                    doc.text(messageLines, margin, yPosition);
+                    yPosition += (messageLines.length * 6) + 5;
+                    
+                    // Add author
+                    doc.setFontSize(10);
+                    doc.setTextColor(102, 126, 234);
+                    doc.text(`- ${memory.author}`, margin, yPosition);
+                    yPosition += 4;
+                    
+                    // Add date
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    const date = new Date(memory.timestamp);
+                    doc.text(date.toLocaleDateString(), margin, yPosition);
+                    yPosition += 15;
+                    
+                    // Add separator line
+                    doc.setDrawColor(200, 200, 200);
+                    doc.line(margin, yPosition, 190, yPosition);
+                    yPosition += 10;
+                }
+                
+                // Save PDF
+                doc.save('memory-gallery.pdf');
+                alert('PDF downloaded successfully! 🎉');
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>
